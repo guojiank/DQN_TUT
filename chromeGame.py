@@ -3,8 +3,9 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from PIL import Image
 from io import BytesIO
+import cv2 as cv
+import numpy as np
 
-import time
 
 options = webdriver.ChromeOptions()
 
@@ -14,7 +15,7 @@ options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"]
 
 driver = webdriver.Chrome(chrome_options=options)
 
-driver.get("http://www.trex-game.skipser.com/")
+driver.get("http://apps.thecodepost.org/trex/trex.html")
 
 canvas = driver.find_element_by_class_name("runner-canvas")
 
@@ -23,19 +24,18 @@ y = canvas.location.get("y")
 width = canvas.size['width']
 height = canvas.size['height']
 
-start = time.time()
-
 png = driver.get_screenshot_as_png()
+pil_img = Image.open(BytesIO(png)).crop((x, y, x + width, y + height)).convert("L")
+ret, thresh = cv.threshold(np.asarray(pil_img), 127, 255, cv.THRESH_BINARY)
 
-img = Image.open(BytesIO(png))
 
-# convert("L") 转换为灰度图
-cropImg = img.crop((x, y, x + width, y + height)).convert("L")
 
-stop = time.time()
-print(start - stop)
+# cv.imshow("opencv", thresh)
+# cv.waitKey()
 
-cropImg.show()
+
+# cv.imshow("demo", img)
+# cropImg.show()
 
 # action = ActionChains(driver)
 # action.key_down(Keys.SPACE).perform()

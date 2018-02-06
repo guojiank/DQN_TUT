@@ -1,0 +1,32 @@
+import cv2 as cv
+
+template = cv.imread('test/game_over.png')
+img = cv.imread('test/test1.png')
+
+template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
+img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+src = cv.matchTemplate(img, template, cv.TM_CCOEFF_NORMED)
+
+h, w = template.shape
+
+print(img.shape)
+print(template.shape)
+
+min_val, max_val, min_loc, max_loc = cv.minMaxLoc(src)
+
+left_top = max_loc
+right_bottom = (left_top[0]+w,left_top[1]+h)
+
+cv.rectangle(img,left_top,right_bottom,127,2)
+
+print(min_val)
+print(max_val)
+print(min_loc)
+print(max_loc)
+
+
+cv.imshow("thresh1", img)
+# cv.imshow("thresh2", template)
+
+cv.waitKey()
