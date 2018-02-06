@@ -1,7 +1,7 @@
 import cv2 as cv
 
-template = cv.imread('test/game_over.png')
-img = cv.imread('test/test1.png')
+template = cv.imread('test/template.png')
+img = cv.imread('test/img.png')
 
 template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -16,17 +16,13 @@ print(template.shape)
 min_val, max_val, min_loc, max_loc = cv.minMaxLoc(src)
 
 left_top = max_loc
-right_bottom = (left_top[0]+w,left_top[1]+h)
+right_bottom = (left_top[0] + w, left_top[1] + h)
 
-cv.rectangle(img,left_top,right_bottom,127,2)
-
-print(min_val)
-print(max_val)
-print(min_loc)
-print(max_loc)
+cv.rectangle(img, left_top, right_bottom, 127, 2)
 
 
-cv.imshow("thresh1", img)
-# cv.imshow("thresh2", template)
+cv.imshow("img", img)
+cv.imshow("src", src)
+
 
 cv.waitKey()
