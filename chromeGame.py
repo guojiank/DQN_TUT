@@ -2,12 +2,14 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from PIL import Image
-import cv2 as cv
+from io import BytesIO
 
 import time
 
 options = webdriver.ChromeOptions()
 
+options.add_argument("--headless")
+options.add_argument('--disable-gpu')
 options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"])
 
 driver = webdriver.Chrome(chrome_options=options)
@@ -22,11 +24,14 @@ width = canvas.size['width']
 height = canvas.size['height']
 
 start = time.time()
-# driver.save_screenshot("/Users/guojian/Downloads/baidu.png")
+
 png = driver.get_screenshot_as_png()
-img = Image.open("/Users/guojian/Downloads/baidu.png")
-cropImg = img.crop((x, y, x+width, y+height))
-cropImg.save("/Users/guojian/Downloads/baidu2.png")
+
+img = Image.open(BytesIO(png))
+
+# convert("L") 转换为灰度图
+cropImg = img.crop((x, y, x + width, y + height)).convert("L")
+cropImg.save("/Users/guojian/baidu2.png")
 stop = time.time()
 print(start - stop)
 
