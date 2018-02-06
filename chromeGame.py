@@ -31,9 +31,11 @@ img = Image.open(BytesIO(png))
 
 # convert("L") 转换为灰度图
 cropImg = img.crop((x, y, x + width, y + height)).convert("L")
-cropImg.save("/Users/guojian/baidu2.png")
+
 stop = time.time()
 print(start - stop)
+
+cropImg.show()
 
 # action = ActionChains(driver)
 # action.key_down(Keys.SPACE).perform()
