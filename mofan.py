@@ -18,13 +18,13 @@ np.random.seed(1)
 
 # Hyper Parameters
 BATCH_SIZE = 32
-LR = 0.01                   # learning rate
-EPSILON = 0.9               # greedy policy
-GAMMA = 0.9                 # reward discount
-TARGET_REPLACE_ITER = 100   # target update frequency
+LR = 0.01  # learning rate
+EPSILON = 0.9  # greedy policy
+GAMMA = 0.9  # reward discount
+TARGET_REPLACE_ITER = 100  # target update frequency
 MEMORY_CAPACITY = 2000
-MEMORY_COUNTER = 0          # for store experience
-LEARNING_STEP_COUNTER = 0   # for target updating
+MEMORY_COUNTER = 0  # for store experience
+LEARNING_STEP_COUNTER = 0  # for target updating
 env = gym.make('CartPole-v0')
 env = env.unwrapped
 
@@ -35,7 +35,7 @@ N_ACTIONS = env.action_space.n
 N_STATES = env.observation_space.shape[0]
 
 # (2000,10)
-MEMORY = np.zeros((MEMORY_CAPACITY, N_STATES * 2 + 2))     # initialize memory
+MEMORY = np.zeros((MEMORY_CAPACITY, N_STATES * 2 + 2))  # initialize memory
 
 # tf placeholders
 # s = [none,4]
@@ -50,17 +50,17 @@ tf_r = tf.placeholder(tf.float32, [None, ])
 # s_ = [none,4]
 tf_s_ = tf.placeholder(tf.float32, [None, N_STATES])
 
-with tf.variable_scope('q'):        # evaluation network
+with tf.variable_scope('q'):  # evaluation network
 
     # rule()
     l_eval = tf.layers.dense(tf_s, 10, tf.nn.relu, kernel_initializer=tf.random_normal_initializer(0, 0.1))
     q = tf.layers.dense(l_eval, N_ACTIONS, kernel_initializer=tf.random_normal_initializer(0, 0.1))
 
-with tf.variable_scope('q_next'):   # target network, not to train
+with tf.variable_scope('q_next'):  # target network, not to train
     l_target = tf.layers.dense(tf_s_, 10, tf.nn.relu, trainable=False)
     q_next = tf.layers.dense(l_target, N_ACTIONS, trainable=False)
 
-q_target = tf_r + GAMMA * tf.reduce_max(q_next, axis=1)                   # shape=(None, ),
+q_target = tf_r + GAMMA * tf.reduce_max(q_next, axis=1)  # shape=(None, ),
 
 # [ [1,a1]
 #   [2,a2]
@@ -69,7 +69,7 @@ q_target = tf_r + GAMMA * tf.reduce_max(q_next, axis=1)                   # shap
 # ]
 #
 a_indices = tf.stack([tf.range(tf.shape(tf_a)[0], dtype=tf.int32), tf_a], axis=1)
-q_wrt_a = tf.gather_nd(params=q, indices=a_indices)     # shape=(None, ), q for current state
+q_wrt_a = tf.gather_nd(params=q, indices=a_indices)  # shape=(None, ), q for current state
 
 loss = tf.reduce_mean(tf.squared_difference(q_target, q_wrt_a))
 train_op = tf.train.AdamOptimizer(LR).minimize(loss)
@@ -112,9 +112,10 @@ def learn():
     b_memory = MEMORY[sample_index, :]
     b_s = b_memory[:, :N_STATES]
     b_a = b_memory[:, N_STATES].astype(int)
-    b_r = b_memory[:, N_STATES+1]
+    b_r = b_memory[:, N_STATES + 1]
     b_s_ = b_memory[:, -N_STATES:]
     sess.run(train_op, {tf_s: b_s, tf_a: b_a, tf_r: b_r, tf_s_: b_s_})
+
 
 print('\nCollecting experience...')
 for i_episode in range(400):
