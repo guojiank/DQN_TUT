@@ -27,50 +27,50 @@ height = canvas.size['height']
 
 template = cv.imread('test/template.png')
 template = cv.cvtColor(template, cv.COLOR_BGR2GRAY)
+ref, template = cv.threshold(template, 127, 255, cv.THRESH_BINARY)
 h, w = template.shape
 
-action = ActionChains(driver)
+action_chains = ActionChains(driver)
 
 
 def capture():
     png = driver.get_screenshot_as_png()
     pil_img = Image.open(BytesIO(png)).crop((x, y, x + width, y + height)).convert("L")
     img = np.asarray(pil_img)
+    ref2, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
     return img
 
 
 def mactch(target):
     src = cv.matchTemplate(target, template, cv.TM_CCOEFF)
     min_val, max_val, min_loc, max_loc = cv.minMaxLoc(src)
-
-    if max_val > 5000000.0:
+    # cv.rectangle(target, max_loc, (max_loc[0] + w, max_loc[1] + h), 127, 2)
+    # cv.imwrite("/Users/guojian/Desktop/tmp/" + str(max_val) + str(time.time()) + ".png", target)
+    if max_val > 10000000.0:
         return True
     else:
         return False
 
 
-while True:
-    screen = capture()
-    mactch(screen)
+def sample():
     if random.random() > 0.5:
-        action.key_down(Keys.SPACE).perform()
+        return Keys.SPACE
     else:
-        action.key_down(Keys.DOWN)
+        return Keys.DOWN
+
+
+def step(action):
+    action_chains.key_down(action).perform()
+    _observation = capture()
+    _done = mactch(_observation)
+    _award = -100 if _done else 1
+    return (_observation, _award, _done)
+
+
+while True:
+    action = sample()
+    observation, award, done = step(action)
+    print(award, done)
     time.sleep(0.5)
 
-# cv.imshow("opencv", thresh)
-# cv.waitKey()
-
-
-# cv.imshow("demo", img)
-# cropImg.show()
-
-# action = ActionChains(driver)
-# action.key_down(Keys.SPACE).perform()
-# time.sleep(2)
-# action.key_down(Keys.SPACE).perform()
-# time.sleep(2)
-# action.key_down(Keys.SPACE).perform()
-#
-# time.sleep(10)
 driver.quit()
