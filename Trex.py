@@ -11,6 +11,7 @@ import random
 options = webdriver.ChromeOptions()
 
 # options.add_argument("--headless")
+# options.add_argument("--remote-debugging-port=9222")
 # options.add_argument('--disable-gpu')
 options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"])
 
@@ -19,6 +20,7 @@ driver = webdriver.Chrome(chrome_options=options)
 driver.get("http://apps.thecodepost.org/trex/trex.html")
 
 canvas = driver.find_element_by_class_name("runner-canvas")
+
 
 x = canvas.location.get("x")
 y = canvas.location.get("y")

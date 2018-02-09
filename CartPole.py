@@ -31,7 +31,7 @@ with tf.variable_scope("e"):
 with tf.variable_scope("t"):
     target_layer1 = tf.layers.dense(inputs=tf_s_, units=30, activation=tf.nn.relu, trainable=False)
     target_dropout1 = tf.layers.dropout(target_layer1, rate=0.1)
-    target_layer2 = tf.layers.dense(inputs=target_dropout1,units=30, activation=tf.nn.relu, trainable=False)
+    target_layer2 = tf.layers.dense(inputs=target_dropout1, units=30, activation=tf.nn.relu, trainable=False)
     dropout2 = tf.layers.dropout(target_layer2, rate=0.1)
     # inputs tensor shape : [None,4]
     # outputs tensor shape : [None,2]
@@ -74,7 +74,7 @@ def learn():
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="e")
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="t")
         sess.run([tf.assign(t, e) for t, e in zip(t_params, e_params)])
-        Learn_step+=1
+        Learn_step += 1
         print(Learn_step)
     LEARNING_STEP_COUNTER += 1
     sample_index = np.random.choice(MEMORY_CAPACITY, 32)
@@ -90,10 +90,14 @@ env = gym.make("CartPole-v0")
 env = env.unwrapped
 for episode in range(1000):
     observation = env.reset()
+    time_life = 0
     while True:
+
         env.render()
         action = choose_action(observation)
         observation_, award, done, info = env.step(action)
+
+        # r = -1 if done else 1
 
         x, x_dot, theta, theta_dot = observation_
         r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8
@@ -106,6 +110,8 @@ for episode in range(1000):
             learn()
 
         if done:
+            print("over {}".format(time_life))
             break
 
         observation = observation_
+        time_life += 1
