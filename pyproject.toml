@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "ml-learning"
+version = "0.1.0"
+description = ""
+authors = ["Jian Guo <guojian_k@qq.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pygame = "^2.5.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[plugins]
+[plugins.pypi_mirror]
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
