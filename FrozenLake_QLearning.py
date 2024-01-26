@@ -74,14 +74,27 @@ class QAgent(object):
     def __init__(self):
         self.memory = collections.deque(maxlen=1000)
         self.lr = 0.001
+        self.epsilon = 0.1
         self.q = QNetwork()
         self.target_q = QNetwork()
+        self.q.load_state_dict(self.target_q.state_dict())
 
     def memory_update(self, s, a, r, next_s, terminated):
         self.memory.append((s, a, r, next_s, terminated))
 
     def update_q(self):
+        m = random.sample(self.memory, 100)
+
         pass
+
+    def take_action(self, s):
+        if np.random.uniform() <= self.epsilon:
+            return random.choice([0, 2, 3, 4])
+        else:
+            return torch.argmax(self.q.forward(torch.tensor(s))).item()
+
+    def predict(self, s):
+        return torch.argmax(self.q.forward(torch.tensor(s))).item()
 
 
 if __name__ == '__main__':
