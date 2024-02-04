@@ -61,9 +61,11 @@ class QNetwork(torch.nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.model = nn.Sequential(
-            nn.Linear(1, 32),
+            nn.Linear(1, 128),
             nn.ReLU(),
-            nn.Linear(32, 4)
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 4)
         )
 
     def forward(self, x):
@@ -74,21 +76,21 @@ class QAgent(object):
 
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.memory = collections.deque(maxlen=1000)
+        self.memory = collections.deque(maxlen=5000)
         self.gamma = 0.88
         self.epsilon = 0.1
         self.q = QNetwork()
         self.target_q = QNetwork()
         self.q.load_state_dict(self.target_q.state_dict())
-        self.loss = nn.MSELoss()
-        self.opt = torch.optim.Adam(self.q.parameters())
+        self.loss = nn.SmoothL1Loss()
+        self.opt = torch.optim.AdamW(self.q.parameters())
         self.step = 0
 
     def memory_append(self, s, a, r, next_s, t):
         self.memory.append((s, a, r, next_s, t))
 
     def update(self):
-        if len(self.memory) <= 200:
+        if len(self.memory) <= 1000:
             return
         self.step += 1
         size_k = 64
@@ -121,17 +123,13 @@ class QAgent(object):
     def learn(self):
         print(self.q(FloatTensor([[i] for i in range(16)])))
         env = gymnasium.make('FrozenLake-v1', render_mode="rgb_array", is_slippery=False)
-        with trange(1000) as bar:
+        with trange(2000) as bar:
             for _ in bar:
                 observation, _ = env.reset()
                 for step in range(20):
                     action = self.take_action(observation)
                     observation_, reward, terminated, truncated, _ = env.step(action)
-                    if terminated:
-                        reward = -1000
-                    if observation_ == 15:
-                        reward = 1000
-                    self.memory_append(observation, action, reward * 10 if observation != observation_ else -10,
+                    self.memory_append(observation, action, reward if observation != observation_ else -1,
                                        observation_, terminated)
                     observation = observation_
                     if terminated:

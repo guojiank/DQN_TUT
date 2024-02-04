@@ -1,7 +1,10 @@
+import collections
+
 import torch
 
 if __name__ == '__main__':
-    a = torch.tensor([[1], [2]])
-    b = torch.tensor([[0.1], [0.2]])
-    c = (1 - b) * a
-    print(c)
+    q = collections.deque(maxlen=10)
+    q.append([1, 2, 3])
+    q.append([4, 5, 6])
+    a = list(zip(*q))
+    print(a)
