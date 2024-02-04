@@ -1,4 +1,5 @@
 import collections
+import math
 import random
 
 import gymnasium
@@ -75,76 +76,82 @@ class QNetwork(torch.nn.Module):
 class QAgent(object):
 
     def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.memory = collections.deque(maxlen=5000)
+        self.memory = collections.deque([], maxlen=5000)
         self.gamma = 0.88
-        self.epsilon = 0.1
         self.q = QNetwork()
         self.target_q = QNetwork()
         self.q.load_state_dict(self.target_q.state_dict())
         self.loss = nn.SmoothL1Loss()
         self.opt = torch.optim.AdamW(self.q.parameters())
-        self.step = 0
+        self.count = 0
 
-    def memory_append(self, s, a, r, next_s, t):
-        self.memory.append((s, a, r, next_s, t))
+    def append(self, s, a, r, next_s):
+        self.memory.append(
+            (FloatTensor([s]), LongTensor([a]), FloatTensor([r]), FloatTensor([next_s]) if next_s else None)
+        )
 
     def update(self):
-        if len(self.memory) <= 1000:
+        if len(self.memory) <= 128:
             return
-        self.step += 1
-        size_k = 64
-        array = np.array(random.sample(self.memory, size_k))
-        states = FloatTensor(array[:, 0]).reshape([-1, 1])
-        actions = LongTensor(array[:, 1]).reshape([-1, 1])
-        rewards = FloatTensor(array[:, 2]).reshape([-1, 1])
-        next_states = FloatTensor(array[:, 3]).reshape([-1, 1])
-        dones = FloatTensor(array[:, 4]).reshape([-1, 1])
+        size_k = 128
+        batch = list(zip(*random.sample(self.memory, size_k)))
+        states = torch.cat(batch[0]).reshape([-1, 1])
+        actions = torch.cat(batch[1]).reshape([-1, 1])
+        rewards = torch.cat(batch[2]).reshape([-1, 1])
+        masks = torch.BoolTensor([[i is not None] for i in batch[3]])
+        not_none_next_states = torch.cat([i for i in batch[3] if i is not None]).reshape([-1, 1])
+
+        next_states_values = torch.zeros(128).reshape(-1, 1)
+        next_states_values[masks] = self.target_q(not_none_next_states).max(1)[0]
 
         outputs = self.q(states).gather(1, actions)
-        targets = rewards + self.gamma * (1 - dones) * self.target_q(next_states).max(1)[0].reshape([-1, 1])
+        targets = rewards + self.gamma * next_states_values
         loss = self.loss(outputs, targets)
+
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
-        if self.step % 20 == 0:
-            self.target_q.load_state_dict(self.q.state_dict())
-        return loss.item()
 
-    def take_action(self, s):
-        if np.random.uniform() <= self.epsilon:
+        q_dict = self.q.state_dict()
+        target_q_dict = self.target_q.state_dict()
+
+        for k in target_q_dict.keys():
+            target_q_dict[k] = q_dict[k] * 0.005 + 0.995 * target_q_dict[k]
+
+        self.target_q.load_state_dict(target_q_dict)
+
+    def sample(self, s):
+        self.count += 1
+        e = 0.05 + 0.85 * math.exp(-1.0 * self.count / 1000)
+        if random.random() < e:
             return random.choice([0, 1, 2, 3])
         else:
-            return self.q(FloatTensor([[s]])).argmax().item()
+            return self.action(s)
 
-    def predict(self, s):
+    def action(self, s):
         return self.q(FloatTensor([[s]])).argmax().item()
 
     def learn(self):
-        print(self.q(FloatTensor([[i] for i in range(16)])))
         env = gymnasium.make('FrozenLake-v1', render_mode="rgb_array", is_slippery=False)
-        with trange(2000) as bar:
+        with trange(500) as bar:
             for _ in bar:
                 observation, _ = env.reset()
                 for step in range(20):
-                    action = self.take_action(observation)
+                    action = self.sample(observation)
                     observation_, reward, terminated, truncated, _ = env.step(action)
-                    self.memory_append(observation, action, reward if observation != observation_ else -1,
-                                       observation_, terminated)
+                    self.append(observation, action, -1 if observation_ == observation else reward,
+                                None if terminated else observation_)
                     observation = observation_
+                    self.update()
                     if terminated:
-                        loss = self.update()
-                        if loss is not None:
-                            bar.set_description(f'loss: {loss}')
                         break
 
     def test(self):
         env = gymnasium.make('FrozenLake-v1', render_mode="human", is_slippery=False)
-        print(self.q(FloatTensor([[i] for i in range(16)])))
         for episode in range(10):
             observation, _ = env.reset()
             for step in range(20):
-                action = self.predict(observation)
+                action = self.action(observation)
                 observation_, reward, terminated, truncated, _ = env.step(action)
                 observation = observation_
                 if terminated or truncated:
