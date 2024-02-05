@@ -2,6 +2,7 @@ import math
 from collections import deque
 from itertools import count
 from random import random, sample, choice
+from time import sleep
 
 import gymnasium as gym
 import numpy as np
@@ -39,14 +40,17 @@ class Memory:
         return len(self.memory)
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 class Agent:
 
     def __init__(self, input_size, output_size, memory_capacity=10000, batch_size=64, gamma=0.99, tun=0.005):
         self.input_size = input_size
         self.output_size = output_size
         self.memory = Memory(memory_capacity)
-        self.policy_net = Network(self.input_size, self.output_size)
-        self.target_net = Network(self.input_size, self.output_size)
+        self.policy_net = Network(self.input_size, self.output_size).to(device)
+        self.target_net = Network(self.input_size, self.output_size).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.loss_fn = nn.SmoothL1Loss()
         self.optimizer = optim.AdamW(self.policy_net.parameters())
@@ -66,35 +70,38 @@ class Agent:
         )
 
     def sample(self, s):
-        e = 0.05 + 0.90 * math.exp(-1.0 * self.count / 100)
+        e = 0.05 + 0.85 * math.exp(-1.0 * self.count / 10000)
         self.count += 1
-        if random() > e:
+        if random() < e:
             return choice([_ for _ in range(self.output_size)])
         else:
             return self.action(s)
 
     def action(self, s):
-        state = FloatTensor(np.array([s]))
+        state = FloatTensor(np.array([s])).to(device)
         return self.policy_net(state).argmax().item()
 
     def learn(self):
         if self.memory.size() < self.batch_size:
             return
         batch = list(zip(*self.memory.sample(self.batch_size)))
-        batch_state = torch.cat(batch[0])
-        batch_action = torch.cat(batch[1])
-        batch_reward = torch.cat(batch[2])
-        batch_next_state = torch.cat(batch[3])
-        batch_done = torch.cat(batch[4])
+        batch_state = torch.cat(batch[0]).to(device)
+        batch_action = torch.cat(batch[1]).to(device)
+        batch_reward = torch.cat(batch[2]).to(device)
+        batch_next_state = torch.cat(batch[3]).to(device)
+        batch_done = torch.cat(batch[4]).to(device)
 
         next_final_state = batch_next_state[~batch_done]
 
         batch_action_values = self.policy_net(batch_state).gather(1, batch_action).reshape(-1)
 
-        next_action_values = torch.zeros(self.batch_size)
+        next_action_values = torch.zeros(self.batch_size).to(device)
         next_action_values[~batch_done] = self.target_net(next_final_state).max(1).values
 
         batch_target_values = batch_reward + self.gamma * next_action_values
+
+        batch_action_values.to(device)
+        batch_target_values.to(device)
 
         loss = self.loss_fn(batch_action_values, batch_target_values)
 
@@ -112,19 +119,18 @@ class Agent:
 
 
 if __name__ == '__main__':
-    with gym.make("LunarLander-v2", render_mode="rgb_array") as env, trange(150) as bar:
+    with gym.make("LunarLander-v2", render_mode="rgb_array") as env, trange(600) as bar:
         observation, _ = env.reset(seed=42)
         agent = Agent(env.observation_space.shape[0], env.action_space.n)
         for episode in bar:
             for _ in count():
                 action = agent.sample(observation)
                 observation_, reward, terminated, truncated, _ = env.step(action)
-                if truncated:
-                    reward = -1000
                 agent.push(observation, action, reward, observation_, terminated)
                 agent.learn()
                 observation = observation_
                 if terminated or truncated:
+                    bar.set_description(f"reward:{reward}")
                     observation, info = env.reset()
                     break
 
@@ -136,5 +142,7 @@ if __name__ == '__main__':
                 observation_, reward, terminated, truncated, _ = env.step(action)
                 observation = observation_
                 if terminated or truncated:
+                    bar.set_description(f"reward:{reward}")
+                    sleep(2)
                     observation, info = env.reset()
                     break

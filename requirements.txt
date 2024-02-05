@@ -5,3 +5,5 @@ torch~=2.1.2+cu121
 tqdm~=4.65.0
 matplotlib~=3.7.2
 ipython~=8.15.0
+atari_py==0.2.9
+gymnasium[atari]
