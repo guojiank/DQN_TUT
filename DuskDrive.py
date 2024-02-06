@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import universe
 
 env = gym.make('flashgames.DuskDrive-v0')

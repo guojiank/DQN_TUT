@@ -8,3 +8,4 @@ ipython~=8.15.0
 atari_py==0.2.9
 gymnasium[atari]
 gymnasium[accept-rom-license]
+gymnasium[mujoco]

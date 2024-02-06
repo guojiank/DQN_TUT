@@ -9,11 +9,12 @@ import torch
 from torch import nn, optim, FloatTensor, LongTensor, BoolTensor
 from tqdm import trange
 
+
 class Network(nn.Module):
     def __init__(self, input_size, output_size):
         super(Network, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(),
+            nn.Conv2d(3, 64, kernel_size=3),
             nn.Linear(input_size, 128),
             nn.ReLU(),
             nn.Linear(128, 128),

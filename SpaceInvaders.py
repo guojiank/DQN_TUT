@@ -1,12 +1,14 @@
-import gym
-env = gym.make('SpaceInvaders-v0')
+import gymnasium as gym
 
-for episode in range(1000):
-    env.reset()
-    while True:
-        env.render()
-        action = env.action_space.sample()
-        observation,award,done,info = env.step(action)
-        print(award)
-        if done:
-            break
+if __name__ == '__main__':
+
+    env = gym.make('SpaceInvaders-v0', render_mode='human')
+    for episode in range(1000):
+        env.reset()
+        while True:
+            env.render()
+            action = env.action_space.sample()
+            observation, award, done, _, _ = env.step(action)
+            print(award)
+            if done:
+                break
