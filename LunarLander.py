@@ -9,7 +9,7 @@ from core.sample_agent import Agent
 if __name__ == '__main__':
     with gym.make("LunarLander-v2", render_mode="rgb_array") as env, trange(600) as bar:
         observation, _ = env.reset(seed=42)
-        agent = Agent(env.observation_space.shape[0], env.action_space.n)
+        agent = Agent(env.observation_space.shape[0], env.action_space.n, e_size=10000, batch_size=64)
         for episode in bar:
             for _ in count():
                 action = agent.sample(observation)

@@ -8,14 +8,14 @@ from torch import FloatTensor, optim, nn, LongTensor, BoolTensor
 
 
 class Network(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, features):
         super(Network, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(input_size, 128),
+            nn.Linear(input_size, features),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(features, features),
             nn.ReLU(),
-            nn.Linear(128, output_size)
+            nn.Linear(features, output_size)
         )
 
     def forward(self, x):
@@ -41,12 +41,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Agent:
 
-    def __init__(self, input_size, output_size, memory_capacity=10000, batch_size=64, gamma=0.99, tun=0.005):
+    def __init__(self, input_size, output_size, memory_capacity=10000, batch_size=64, gamma=0.99, tun=0.005,
+                 e_size=1000, features=128):
+        self.features = features
+        self.e_size = e_size
         self.input_size = input_size
         self.output_size = output_size
         self.memory = Memory(memory_capacity)
-        self.policy_net = Network(self.input_size, self.output_size).to(device)
-        self.target_net = Network(self.input_size, self.output_size).to(device)
+        self.policy_net = Network(self.input_size, self.output_size, features).to(device)
+        self.target_net = Network(self.input_size, self.output_size, features).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.loss_fn = nn.SmoothL1Loss()
         self.optimizer = optim.AdamW(self.policy_net.parameters())
@@ -66,7 +69,7 @@ class Agent:
         )
 
     def sample(self, s):
-        e = 0.05 + 0.85 * math.exp(-1.0 * self.count / 10000)
+        e = 0.05 + 0.85 * math.exp(-1.0 * self.count / self.e_size)
         self.count += 1
         if random() < e:
             return choice([_ for _ in range(self.output_size)])
